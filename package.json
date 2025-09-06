@@ -1,14 +1,19 @@
 {
-  "name": "bee-criativos-veo-backend",
-  "version": "1.0.0",
-  "description": "Secure backend for VEO video generation",
-  "main": "server.js",
+  "name": "bee-criativos---gerador-de-vídeo-veo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@google/genai": "^1.4.0",
-    "cors": "^2.8.5",
-    "express": "^4.19.2"
+    "@google/genai": "^1.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
   }
 }
