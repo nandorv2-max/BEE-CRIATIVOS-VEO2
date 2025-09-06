@@ -1,0 +1,88 @@
+body {
+  padding: 10px;
+  font-family: sans-serif;
+}
+
+input,
+button,
+select,
+textarea {
+  font: inherit;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+button {
+  cursor: pointer;
+  background-color: #0b57d0;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+img {
+  display: none;
+  width: 100%;
+  max-width: 300px;
+  margin-top: 10px;
+}
+
+video {
+  width: 100%;
+  border-radius: 8px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 120px;
+}
+
+.controls-container {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+#video-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.video-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#status.error {
+  color: red;
+  font-weight: bold;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #0b57d0;
+  animation: spin 1s ease-in-out infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

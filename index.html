@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Veo - Video Generation</title>
+    <link rel="stylesheet" href="index.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/genai": "https://esm.sh/@google/genai@^1.4.0"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Veo - Video Generation</h1>
+    <p>Enter a prompt.</p>
+    <p>
+      <textarea id="prompt-input" type="text" placeholder="Enter a prompt">
+Animate the image as UGC of a person as if talking to the camera, explaining something, without making abrupt changes and keeping the same environment. Generate a high-definition video, preserving the high fidelity and sharp details of the original image. The animation must maintain the photorealistic quality and texture of the reference image. There should be no change in zoom or cuts to different angles at any moment of the generated video. No element of the image can be altered, only the animation should be done naturally, as if it were a real UGC. The animation must not alter the colors from the original image, maintaining the same color pattern from start to finish without any modifications.</textarea
+      >
+    </p>
+    <div class="controls-container">
+      <p>
+        <label for="aspect-ratio-select">Aspect Ratio:</label>
+        <select id="aspect-ratio-select">
+          <option value="">Default</option>
+          <option value="16:9">16:9 (Landscape)</option>
+          <option value="9:16">9:16 (Portrait)</option>
+          <option value="1:1">1:1 (Square)</option>
+        </select>
+      </p>
+      <p>
+        <label for="number-of-videos-input">Number of Videos (1-2):</label>
+        <input
+          id="number-of-videos-input"
+          type="number"
+          value="1"
+          min="1"
+          max="2"
+        />
+      </p>
+      <p>
+        <label for="duration-input">Duration (5-8 seconds):</label>
+        <input id="duration-input" type="number" value="8" min="5" max="8" />
+      </p>
+    </div>
+    <p>Provide a conditioning image if the model supports it.</p>
+    <p><input id="file-input" type="file" accept="image/*" /></p>
+    <img alt="Condition image" id="img" />
+    <button id="generate-button">Generate</button>
+    <div id="video-container"></div>
+    <p id="status">Ready.</p>
+    <script type="module" src="index.js"></script>
+  </body>
+</html>
