@@ -4,23 +4,21 @@
  * Copyright 2025 Google LLC
  * SPDX-License-Identifier: Apache-2.0
  */
-import { GenerateVideosParameters, GoogleGenAI } from '@google/genai';
 
-async function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
+// Helper function to convert a file blob to a Base64 string
 function blobToBase64(blob: Blob) {
-  return new Promise<string>(async (resolve) => {
+  return new Promise<string>((resolve) => {
     const reader = new FileReader();
     reader.onload = () => {
       const url = reader.result as string;
+      // Return only the Base64 part of the data URL
       resolve(url.split(',')[1]);
     };
     reader.readAsDataURL(blob);
   });
 }
 
+// Helper function to trigger a file download in the browser
 function downloadFile(url, filename) {
   const a = document.createElement('a');
   a.href = url;
@@ -31,77 +29,63 @@ function downloadFile(url, filename) {
   document.body.removeChild(a);
 }
 
+/**
+ * Makes a request to our own backend server to generate the video.
+ * The backend will handle the secure API call to Google.
+ */
 async function generateContent(
   prompt: string,
   imageBytes: string,
   aspectRatio: string,
   numberOfVideos: number,
   durationSeconds: number,
-  apiKey: string,
   videoContainer: HTMLDivElement,
 ) {
-  const ai = new GoogleGenAI({ apiKey });
-
-  const config: GenerateVideosParameters = {
-    model: 'veo-2.0-generate-001',
-    prompt,
-    config: {
-      numberOfVideos: numberOfVideos,
-      durationSeconds: durationSeconds,
+  // Make a POST request to our new backend endpoint
+  const response = await fetch('/generate-video', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
     },
-  };
-
-  if (aspectRatio) {
-    config.config.aspectRatio = aspectRatio;
-  }
-
-  if (imageBytes) {
-    config.image = {
+    body: JSON.stringify({
+      prompt,
       imageBytes,
-      mimeType: 'image/png', // Assuming PNG, might need to be dynamic
-    };
-  }
-
-  let operation = await ai.models.generateVideos(config);
-
-  while (!operation.done) {
-    console.log('Waiting for completion');
-    await delay(10000); // Polling delay
-    operation = await ai.operations.getVideosOperation({ operation });
-  }
-
-  const videos = operation.response?.generatedVideos;
-  if (videos === undefined || videos.length === 0) {
-    throw new Error('No videos generated');
-  }
-
-  videoContainer.innerHTML = ''; // Clear previous videos
-
-  videos.forEach(async (v, i) => {
-    const url = v.video.uri; // FIX: Removed unnecessary decodeURIComponent
-    const res = await fetch(`${url}&key=${apiKey}`);
-    const blob = await res.blob();
-    const objectURL = URL.createObjectURL(blob);
-
-    const videoItemContainer = document.createElement('div');
-    videoItemContainer.className = 'video-item';
-
-    const videoEl = document.createElement('video');
-    videoEl.src = objectURL;
-    videoEl.autoplay = true;
-    videoEl.loop = true;
-    videoEl.controls = true;
-    videoItemContainer.appendChild(videoEl);
-
-    const downloadButton = document.createElement('button');
-    downloadButton.textContent = `Download Vídeo ${i + 1}`;
-    downloadButton.addEventListener('click', () => {
-      downloadFile(objectURL, `video${i + 1}.mp4`);
-    });
-    videoItemContainer.appendChild(downloadButton);
-
-    videoContainer.appendChild(videoItemContainer);
+      aspectRatio,
+      numberOfVideos,
+      durationSeconds,
+    }),
   });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to generate video.');
+  }
+  
+  // The response from our server is the video file itself
+  const blob = await response.blob();
+  const objectURL = URL.createObjectURL(blob);
+  
+  videoContainer.innerHTML = ''; // Clear previous content
+
+  // Create and display the video element
+  const videoItemContainer = document.createElement('div');
+  videoItemContainer.className = 'video-item';
+
+  const videoEl = document.createElement('video');
+  videoEl.src = objectURL;
+  videoEl.autoplay = true;
+  videoEl.loop = true;
+  videoEl.controls = true;
+  videoItemContainer.appendChild(videoEl);
+
+  const downloadButton = document.createElement('button');
+  downloadButton.textContent = `Download Vídeo`;
+  downloadButton.addEventListener('click', () => {
+    downloadFile(objectURL, `video.mp4`);
+  });
+  videoItemContainer.appendChild(downloadButton);
+
+  videoContainer.appendChild(videoItemContainer);
 }
 
 // --- DOM Elements ---
@@ -110,22 +94,17 @@ const imagePreviewContainer = document.querySelector('#image-preview-container')
 const imagePreview = document.querySelector('#image-preview') as HTMLImageElement;
 const removeImageButton = document.querySelector('#remove-image-button') as HTMLButtonElement;
 const fileInputLabel = document.querySelector('.file-input-label') as HTMLSpanElement;
-
 const promptEl = document.querySelector('#prompt-input') as HTMLTextAreaElement;
 const statusEl = document.querySelector('#status') as HTMLParagraphElement;
 const videoContainer = document.querySelector('#video-container') as HTMLDivElement;
 const placeholder = document.querySelector('.output-placeholder') as HTMLDivElement;
-
 const aspectRatioSelect = document.querySelector('#aspect-ratio-select') as HTMLSelectElement;
 const numberOfVideosInput = document.querySelector('#number-of-videos-input') as HTMLInputElement;
 const durationInput = document.querySelector('#duration-input') as HTMLInputElement;
-
 const generateButton = document.querySelector('#generate-button') as HTMLButtonElement;
 
 // --- State ---
 let base64data = '';
-// FIX: Correctly type `messageInterval` to fix "Type 'Timeout' is not assignable to type 'number'".
-// `ReturnType<typeof setInterval>` accommodates both browser (`number`) and Node.js (`Timeout`) return types.
 let messageInterval: ReturnType<typeof setInterval> | null = null;
 
 // --- Event Listeners ---
@@ -158,22 +137,16 @@ generateButton.addEventListener('click', () => {
 
 // --- Main Function ---
 async function generate() {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    statusEl.innerText = 'Erro: A variável de ambiente API_KEY não foi definida';
-    statusEl.classList.add('error');
-    return;
-  }
-  
   if (placeholder) placeholder.style.display = 'none';
   videoContainer.innerHTML = '';
   statusEl.className = 'status-message';
   
   const loadingMessages = [
+    'Enviando para o servidor...',
     'Gerando... isso pode levar alguns minutos.',
-    'Aquecendo o modelo de geração de vídeo...',
-    'Buscando resultados, por favor, seja paciente.',
     'O modelo está trabalhando na sua criação.',
+    'Buscando resultados, por favor, seja paciente.',
+    'Finalizando a geração do vídeo...',
     'Quase lá...',
   ];
   let messageIndex = 0;
@@ -209,25 +182,11 @@ async function generate() {
       aspectRatio,
       numberOfVideos,
       duration,
-      apiKey,
       videoContainer,
     );
-    statusEl.innerHTML = `✅ Pronto. ${numberOfVideos} vídeo(s) gerado(s).`;
+    statusEl.innerHTML = `✅ Pronto. O vídeo foi gerado.`;
   } catch (e) {
-    let errorMessage = e.message;
-    try {
-      const err = JSON.parse(e.message);
-      if (err.error) {
-        if (err.error.status === 'RESOURCE_EXHAUSTED') {
-          errorMessage = `Cota excedida. Verifique seu plano e detalhes de faturamento.`;
-        } else {
-          errorMessage = err.error.message;
-        }
-      }
-    } catch (parseError) {
-      // Not a JSON string, use the original message
-    }
-    statusEl.innerHTML = `Erro: ${errorMessage}`;
+    statusEl.innerHTML = `Erro: ${e.message}`;
     statusEl.classList.add('error');
     console.error('Error:', e);
   } finally {
