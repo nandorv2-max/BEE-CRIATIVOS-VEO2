@@ -110,6 +110,7 @@ const imagePreviewContainer = document.querySelector('#image-preview-container')
 const imagePreview = document.querySelector('#image-preview') as HTMLImageElement;
 const removeImageButton = document.querySelector('#remove-image-button') as HTMLButtonElement;
 const fileInputLabel = document.querySelector('.file-input-label') as HTMLSpanElement;
+const apiKeyInput = document.querySelector('#api-key-input') as HTMLInputElement;
 
 const promptEl = document.querySelector('#prompt-input') as HTMLTextAreaElement;
 const statusEl = document.querySelector('#status') as HTMLParagraphElement;
@@ -127,6 +128,12 @@ let base64data = '';
 // FIX: Correctly type `messageInterval` to fix "Type 'Timeout' is not assignable to type 'number'".
 // `ReturnType<typeof setInterval>` accommodates both browser (`number`) and Node.js (`Timeout`) return types.
 let messageInterval: ReturnType<typeof setInterval> | null = null;
+
+// --- Load API Key from Local Storage on startup ---
+const savedApiKey = localStorage.getItem('googleApiKey');
+if (savedApiKey) {
+    apiKeyInput.value = savedApiKey;
+}
 
 // --- Event Listeners ---
 uploadInput.addEventListener('change', async (e) => {
@@ -158,12 +165,13 @@ generateButton.addEventListener('click', () => {
 
 // --- Main Function ---
 async function generate() {
-  const apiKey = process.env.API_KEY;
+  const apiKey = apiKeyInput.value.trim();
   if (!apiKey) {
-    statusEl.innerText = 'Erro: A variável de ambiente API_KEY não foi definida';
+    statusEl.innerText = 'Erro: Por favor, insira sua chave de API do Google.';
     statusEl.classList.add('error');
     return;
   }
+  localStorage.setItem('googleApiKey', apiKey);
   
   if (placeholder) placeholder.style.display = 'none';
   videoContainer.innerHTML = '';
@@ -199,6 +207,7 @@ async function generate() {
     aspectRatioSelect,
     numberOfVideosInput,
     durationInput,
+    apiKeyInput,
   ];
   inputs.forEach((el) => (el.disabled = true));
 
